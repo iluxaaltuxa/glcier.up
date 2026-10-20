@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GLACIER.UP — симулятор апгрейда скинов CS2</title>
+<style>
+:root{--bg:#0a141c;--panel:#101e29;--card:#14293a;--line:#203a4e;--acc:#29b6d9;--txt:#e8f3f8;--mut:#8aa6b6;--bad:#ef5b72}
+*{box-sizing:border-box;margin:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--txt);font:15px/1.4 "Segoe UI",system-ui,-apple-system,sans-serif;min-height:100vh}
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel);position:sticky;top:0;z-index:5}
+.logo{font-weight:900;font-size:22px;letter-spacing:1px}.logo b{color:var(--acc)}
+nav{display:flex;gap:6px;flex:1}
+nav button,.chip{background:none;border:1px solid transparent;color:var(--mut);padding:9px 16px;border-radius:8px;cursor:pointer;font:inherit;font-weight:600;white-space:nowrap}
+nav button.on,.chip.on{color:#04212a;background:var(--acc)}
+nav button:hover:not(.on),.chip:hover:not(.on){border-color:var(--line);color:var(--txt)}
+.bal{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--line);padding:5px 5px 5px 14px;border-radius:10px;font-weight:800}
+.bal span{color:var(--acc)}
+.btn{background:var(--acc);color:#04212a;border:0;border-radius:8px;padding:9px 14px;font:inherit;font-weight:800;cursor:pointer;min-height:38px}
+.btn:hover{filter:brightness(1.1)}
+.btn.g{background:#1d3a50;color:var(--txt)}.btn.d{background:#3b2230;color:#ff9db0}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+main{max-width:1300px;margin:0 auto;padding:20px}
+section{display:none}section.on{display:block}
+h2{font-size:20px;margin-bottom:12px}
+.bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+input[type=search]{background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:9px 12px;font:inherit;min-width:0;flex:1 1 200px;max-width:340px}
+input[type=search]:focus{outline:2px solid var(--acc)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-bottom:3px solid var(--rc);border-radius:10px;padding:8px;text-align:center;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;display:flex;flex-direction:column}
+.card:hover{border-color:var(--rc)}
+.card.sel{outline:2px solid var(--acc);background:#18384d}
+.im{aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;background:var(--panel);border-radius:6px;margin-bottom:6px}
+.im img{max-width:100%;max-height:100%;object-fit:contain}
+.card .w{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .n{font-weight:700;font-size:13px;min-height:36px;display:flex;align-items:center;justify-content:center;line-height:1.2}
+.card .p{color:var(--acc);font-weight:800;margin-top:2px}
+.card .a{margin-top:auto;padding-top:6px}.card .a .btn{width:100%;padding:6px;font-size:13px}
+.mx{font-size:12px;color:var(--mut);margin-top:auto;padding-top:4px}
+.more{display:block;margin:14px auto 0}
+.up{display:grid;grid-template-columns:1fr 320px 1fr;gap:16px;align-items:start}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;max-height:700px;overflow:auto}
+.box .grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+.mid{text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;position:sticky;top:80px}
+.wheel{position:relative;width:min(260px,76vw);aspect-ratio:1}
+.wheel svg{width:100%;height:100%}
+.ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.ctr b{font-size:38px;color:var(--acc)}.ctr small{color:var(--mut)}
+#needle{transition:transform 4.2s cubic-bezier(.12,.6,.1,1)}
+.pair{display:flex;gap:14px;font-size:13px;color:var(--mut)}.pair b{color:var(--txt)}
+#res{min-height:26px;font-size:18px;font-weight:800}
+.win{color:var(--acc)}.lose{color:var(--bad)}
+.empty{color:var(--mut);padding:26px;text-align:center;grid-column:1/-1}
+#load{position:fixed;inset:0;background:var(--bg);z-index:30;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;text-align:center;padding:20px}
+.spin{width:38px;height:38px;border:4px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:r 1s linear infinite}
+@keyframes r{to{transform:rotate(360deg)}}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(90px);background:var(--acc);color:#04212a;font-weight:800;padding:10px 18px;border-radius:10px;transition:.25s;z-index:20;max-width:90vw;text-align:center}
+#toast.s{transform:translateX(-50%)}
+footer{text-align:center;color:var(--mut);font-size:12px;padding:20px}
+@media(max-width:1100px){.up{grid-template-columns:1fr 1fr}.mid{grid-column:1/-1;position:static}.box{max-height:560px}}
+@media(max-width:700px){
+ header{padding:10px 12px}main{padding:12px}
+ .logo{font-size:19px;flex:1}
+ nav{order:3;flex:1 1 100%}nav button{flex:1;padding:10px 4px}
+ .up{grid-template-columns:1fr}.box{max-height:60vh}
+ .grid{grid-template-columns:repeat(2,1fr);gap:8px}
+ .box .grid{grid-template-columns:repeat(2,1fr)}
+ .btn{min-height:42px}
+}
+</style>
+</head>
+<body>
+<div id="load"><div class="spin"></div><div id="loadt">Загружаем каталог скинов CS2…</div><button class="btn" id="retry" style="display:none">Повторить</button></div>
+<header>
+  <div class="logo">GLACIER<b>.UP</b></div>
+  <nav>
+    <button data-t="shop" class="on">Магазин</button>
+    <button data-t="inv">Инвентарь</button>
+    <button data-t="up">Апгрейд</button>
+  </nav>
+  <div class="bal"><span><span id="bal">0</span> ₽</span><button class="btn" id="top">+5 000 ₽ бесплатно</button></div>
+</header>
+<main>
+  <section id="shop" class="on">
+    <h2>Магазин скинов <span id="cnt" style="color:var(--mut);font-size:14px"></span></h2>
+    <div class="bar"><input type="search" id="q" placeholder="Поиск: AK-47, Redline, нож…"></div>
+    <div class="bar" id="shopbar"></div>
+    <div class="grid" id="shopgrid"></div>
+    <button class="btn g more" id="shopmore">Показать ещё</button>
+  </section>
+  <section id="inv">
+    <h2>Мой инвентарь <span id="invsum" style="color:var(--mut);font-size:14px"></span></h2>
+    <div class="bar"><button class="btn d" id="sellall">Продать всё</button></div>
+    <div class="grid" id="invgrid"></div>
+  </section>
+  <section id="up">
+    <div class="up">
+      <div class="box"><h2>Твои скины</h2><div class="grid" id="upinv"></div></div>
+      <div class="mid">
+        <div class="wheel">
+          <svg viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="90" fill="none" stroke="#1d3a50" stroke-width="12"/>
+            <circle id="arc" cx="100" cy="100" r="90" fill="none" stroke="#29b6d9" stroke-width="12" transform="rotate(-90 100 100)" stroke-dasharray="0 600"/>
+            <g id="needle" style="transform-origin:100px 100px"><polygon points="100,2 94,22 106,22" fill="#fff"/></g>
+          </svg>
+          <div class="ctr"><b id="pc">0%</b><small>шанс</small></div>
+        </div>
+        <div class="pair"><div>Ставка: <b id="sumv">0 ₽</b></div><div>Цель: <b id="tgv">0 ₽</b></div></div>
+        <button class="btn" id="go" style="padding:12px 40px;font-size:16px">АПГРЕЙД</button>
+        <div id="res"></div>
+      </div>
+      <div class="box"><h2>Цель</h2>
+        <div class="bar"><input type="search" id="uq" placeholder="Поиск цели…"></div>
+        <div class="bar" id="mbar"></div><div class="grid" id="uptg"></div>
+        <button class="btn g more" id="upmore">Показать ещё</button>
+      </div>
+    </div>
+  </section>
+</main>
+<footer>GLACIER.UP — учебный симулятор. Виртуальные рубли ₽ не имеют ценности, настоящих денег и вывода нет. Цены в игре условные. Скины © Valve, сайт не связан с Valve.</footer>
+<div id="toast"></div>
+<script src="prices.js"></script>
+<script>
+const URL_API="https://bymykel.github.io/CSGO-API/api/en/skins.json";
+const RAR=["Ширпотреб","Промышленное","Армейское","Запрещённое","Засекреченное","Тайное","Нож/Перчатки ★"];
+const RC=["#b0c3d9","#5e98d9","#4b69ff","#8847ff","#d32ce6","#eb4b4b","#e4ae39"];
+const $=s=>document.querySelector(s);
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let S=[],M=new Map(),st={bal:5000,inv:[],nid:1};
+try{const d=JSON.parse(localStorage.getItem("glacierup3"));if(d&&typeof d.bal=="number")st=d}catch(e){}
+const save=()=>{try{localStorage.setItem("glacierup3",JSON.stringify(st))}catch(e){}};
+const f=n=>(Math.round(n*100)/100).toLocaleString("ru-RU")+" ₽";
+const sk=id=>M.get(id);
+function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("s");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("s"),1900)}
+document.addEventListener("error",e=>{if(e.target.tagName=="IMG")e.target.style.opacity=0},true);
+
+// ---- price provider: единственное место, где цены приходят снаружи.
+// Источник: Skinport GET /v1/items (без ключа, кэш на их стороне 5 мин, лимит 8 запросов / 5 мин).
+// Порядок: свежий кэш/снапшот -> онлайн -> устаревший кэш/снапшот -> ошибка. Случайных цен нет.
+const Prices=(()=>{
+  const CUR="RUB",KEY="glacierup_prices_v1",TTL=6*3600e3;
+  const API="https://api.skinport.com/v1/items?app_id=730&currency="+CUR;
+  const WEAR=/\s*\((Factory New|Minimal Wear|Field-Tested|Well-Worn|Battle-Scarred)\)\s*$/;
+  // market_hash_name "AK-47 | Redline (Field-Tested)" -> "AK-47 | Redline": медиана min-цен по износам
+  function fromItems(items){
+    const by={};
+    for(const it of items){
+      const n=it&&it.market_hash_name,p=it&&it.min_price;
+      if(typeof n!=="string"||typeof p!=="number"||!(p>0)||/StatTrak|Souvenir/.test(n))continue;
+      const b=n.replace(WEAR,"");if(b===n)continue;
+      (by[b]=by[b]||[]).push(p);
+    }
+    const m={};
+    for(const k in by){const a=by[k].sort((x,y)=>x-y),h=a.length>>1;m[k]=Math.round((a.length%2?a[h]:(a[h-1]+a[h])/2)*100)/100}
+    return m;
+  }
+  const readCache=()=>{try{const d=JSON.parse(localStorage.getItem(KEY));return d&&d.map&&d.cur===CUR?d:null}catch(e){return null}};
+  const writeCache=d=>{try{localStorage.setItem(KEY,JSON.stringify(d))}catch(e){}};
+  async function live(){
+    const r=await fetch(API); // Accept-Encoding: br браузер ставит сам
+    if(!r.ok)throw new Error("Skinport HTTP "+r.status);
+    const map=fromItems(await r.json());
+    if(Object.keys(map).length<100)throw new Error("Skinport: слишком мало цен в ответе");
+    return {map,ts:Date.now(),cur:CUR};
+  }
+  async function load(){
+    const c=readCache(),sn=window.PRICE_SNAPSHOT&&window.PRICE_SNAPSHOT.cur===CUR?window.PRICE_SNAPSHOT:null;
+    const cand=[c&&{...c,src:"cache"},sn&&{...sn,src:"snapshot"}].filter(Boolean).sort((a,b)=>b.ts-a.ts)[0];
+    if(cand&&Date.now()-cand.ts<TTL)return cand;
+    try{const d=await live();writeCache(d);return {...d,src:"live"}}
+    catch(e){
+      if(cand)return {...cand,stale:true,err:String(e.message||e)};
+      throw new Error((e.message||e)+" (кэша и prices.js нет)");
+    }
+  }
+  return {load};
+})();
+
+// ---- catalog
+function tier(x,name){
+  if(name.startsWith("★"))return 6;
+  const r=String((x.rarity&&(x.rarity.id||x.rarity.name))||x.rarity||"").toLowerCase();
+  if(r.includes("contraband"))return 6;
+  if(r.includes("ancient")||r.includes("covert")||r.includes("extraord"))return 5;
+  if(r.includes("legendary")||r.includes("classified"))return 4;
+  if(r.includes("mythical")||r.includes("restricted"))return 3;
+  if(r.includes("uncommon")||r.includes("industrial"))return 1;
+  if(r.includes("common")||r.includes("consumer"))return 0;
+  return 2;
+}
+function build(a,priceMap){
+  S=[];M=new Map();
+  for(const x of a){
+    if(!x||!x.image||!x.name)continue;
+    const id=String(x.id||x.name);if(M.has(id))continue;
+    const name=x.name.replace(/\s*\((Factory New|Minimal Wear|Field-Tested|Well-Worn|Battle-Scarred)\)\s*$/,"");
+    const parts=name.split(" | ");if(parts.length<2)continue;
+    const t=tier(x,name),p=priceMap[name];
+    if(!(p>0))continue; // нет рыночной цены -> скина нет в симуляторе
+    const o={id,w:parts[0],n:parts.slice(1).join(" | "),t,p,img:x.image};
+    S.push(o);M.set(id,o);
+  }
+  S.sort((a,b)=>a.p-b.p);
+  st.inv=st.inv.filter(x=>M.has(x.s));
+}
+async function load(){
+  $("#load").style.display="flex";$("#retry").style.display="none";$("#loadt").textContent="Загружаем каталог скинов CS2…";
+  const urls=[URL_API,"https://raw.githubusercontent.com/ByMykel/CSGO-API/main/public/api/en/skins.json","https://cdn.jsdelivr.net/gh/ByMykel/CSGO-API@main/public/api/en/skins.json"];
+  const errs=[];
+  let P;
+  try{P=await Prices.load()}catch(e){
+    $("#loadt").innerHTML="Не удалось получить цены скинов.<br><small style='color:var(--mut)'>"+esc(e.message||e)+"<br>Запусти <b>node update-prices.mjs</b> рядом с файлом, чтобы скачать prices.js.</small>";
+    $("#retry").style.display="";return;
+  }
+  for(const u of urls){
+    try{
+      const r=await fetch(u);if(!r.ok)throw new Error("HTTP "+r.status);
+      const j=await r.json();
+      if(!Array.isArray(j))throw new Error("неожиданный формат данных");
+      build(j,P.map);if(!S.length)throw new Error("в данных нет скинов с картинками");
+      $("#load").style.display="none";render();
+      let pi=$("#pinfo");if(!pi){pi=document.createElement("div");pi.id="pinfo";document.querySelector("footer").appendChild(pi)}
+      pi.textContent=`Цены: Skinport, минимальные предложения (медиана по износам), ${P.cur}. Источник: ${({live:"онлайн",cache:"кэш браузера",snapshot:"prices.js"})[P.src]}, данные от ${new Date(P.ts).toLocaleString("ru-RU")}${P.stale?" — устарели, обновить не удалось":""}.`;
+      return;
+    }catch(e){errs.push(new URL(u).host+": "+(e.message||e))}
+  }
+  $("#loadt").innerHTML="Не удалось загрузить каталог. Проверь интернет, VPN и блокировщики рекламы.<br><small style='color:var(--mut)'>"+esc(errs.join(" | "))+"</small>";
+  $("#retry").style.display="";
+}
+$("#retry").onclick=load;
+
+function card(s,opt={}){
+  return `<div class="card ${opt.sel?"sel":""}" style="--rc:${RC[s.t]}" data-id="${esc(s.id)}" ${opt.uid?`data-uid="${opt.uid}"`:""}><div class="im"><img src="${esc(s.img)}" alt="" loading="lazy" decoding="async"></div><div class="w">${esc(s.w)}</div><div class="n">${esc(s.n)}</div><div class="p">${f(s.p)}</div>${opt.act||""}</div>`;
+}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{document.querySelectorAll("nav button,main>section").forEach(e=>e.classList.remove("on"));b.classList.add("on");$("#"+b.dataset.t).classList.add("on");render()});
+$("#top").onclick=()=>{st.bal+=5000;save();render();toast("+5 000 ₽ — виртуальные, бесплатно")};
+
+// ---- shop
+let shopRar=-1,shopSort=1,shopLim=48,shopQ="";
+function renderShop(){
+  $("#shopbar").innerHTML=`<button class="chip ${shopRar<0?"on":""}" data-r="-1">Все</button>`+RAR.map((r,i)=>`<button class="chip ${shopRar==i?"on":""}" data-r="${i}" style="${shopRar==i?"":"color:"+RC[i]}">${r}</button>`).join("")+`<button class="chip" data-sort="1">Цена ${shopSort>0?"↑":"↓"}</button>`;
+  const q=shopQ.toLowerCase();
+  let l=S.filter(s=>(shopRar<0||s.t==shopRar)&&(!q||(s.w+" "+s.n).toLowerCase().includes(q)));
+  if(shopSort<0)l=l.slice().reverse();
+  $("#cnt").textContent=`— найдено ${l.length}`;
+  $("#shopgrid").innerHTML=l.slice(0,shopLim).map(s=>card(s,{act:`<div class="a"><button class="btn" data-buy="${esc(s.id)}">Купить</button></div>`})).join("")||'<div class="empty">Ничего не найдено</div>';
+  $("#shopmore").style.display=l.length>shopLim?"":"none";
+}
+$("#shopbar").onclick=e=>{const b=e.target.closest("button");if(!b)return;if(b.dataset.sort)shopSort*=-1;else shopRar=+b.dataset.r;shopLim=48;renderShop()};
+$("#q").oninput=e=>{shopQ=e.target.value;shopLim=48;renderShop()};
+$("#shopmore").onclick=()=>{shopLim+=48;renderShop()};
+$("#shopgrid").onclick=e=>{
+  const b=e.target.closest("[data-buy]");if(!b)return;
+  const s=sk(b.dataset.buy);if(!s)return;
+  if(st.bal<s.p)return toast("Не хватает ₽ — пополни баланс бесплатно");
+  st.bal-=s.p;st.inv.push({id:st.nid++,s:s.id});save();$("#bal").textContent=st.bal.toLocaleString("ru-RU");toast("Куплено: "+s.w+" | "+s.n);
+};
+
+// ---- inventory
+function renderInv(){
+  $("#invsum").textContent=st.inv.length?`— ${st.inv.length} шт. на ${f(st.inv.reduce((a,x)=>a+sk(x.s).p,0))}`:"";
+  $("#sellall").disabled=!st.inv.length;
+  $("#invgrid").innerHTML=st.inv.map(x=>card(sk(x.s),{uid:x.id,act:`<div class="a"><button class="btn g" data-sell="${x.id}">Продать</button></div>`})).join("")||'<div class="empty">Инвентарь пуст. Купи скины в магазине.</div>';
+}
+$("#invgrid").onclick=e=>{
+  const b=e.target.closest("[data-sell]");if(!b)return;
+  const id=+b.dataset.sell,x=st.inv.find(v=>v.id==id);if(!x)return;
+  const p=sk(x.s).p;st.bal+=p;st.inv=st.inv.filter(v=>v.id!=id);save();render();toast("Продано за "+f(p));
+};
+$("#sellall").onclick=()=>{const t=st.inv.reduce((a,x)=>a+sk(x.s).p,0);st.bal+=t;st.inv=[];save();render();toast("Продано всё за "+f(t))};
+
+// ---- upgrade
+let sel=new Set(),tgt=null,busy=false,mult=0,rot=0,upLim=48,upQ="";
+const sumSel=()=>st.inv.filter(x=>sel.has(x.id)).reduce((a,x)=>a+sk(x.s).p,0);
+const chanceOf=()=>{const s=sumSel();return tgt&&s>0?Math.min(75,s/sk(tgt).p*95):0};
+function renderUp(){
+  sel=new Set([...sel].filter(id=>st.inv.some(x=>x.id==id)));
+  if(tgt&&!sk(tgt))tgt=null;
+  $("#upinv").innerHTML=st.inv.map(x=>card(sk(x.s),{uid:x.id,sel:sel.has(x.id)})).join("")||'<div class="empty">Нет скинов. Купи в магазине.</div>';
+  renderTargets();updWheel();
+}
+function renderTargets(){
+  const s=sumSel(),q=upQ.toLowerCase();
+  $("#mbar").innerHTML=[["Все",0],["x2",2],["x3",3],["x5",5],["x10",10],["x20",20]].map(m=>`<button class="chip ${mult==m[1]?"on":""}" data-m="${m[1]}">${m[0]}</button>`).join("");
+  let l=S.filter(t=>(!s||t.p>s)&&(!q||(t.w+" "+t.n).toLowerCase().includes(q)));
+  if(s&&mult>0){
+    const want=s*mult;
+    l.sort((a,b)=>Math.abs(a.p-want)-Math.abs(b.p-want));
+    const near=l.filter(t=>Math.abs(t.p-want)<=want*0.2);
+    if(near.length)l=near;
+  }
+  $("#uptg").innerHTML=l.slice(0,upLim).map(t=>card(t,{sel:tgt==t.id,act:s?`<div class="mx">x${(t.p/s).toFixed(2)}</div>`:""})).join("")||'<div class="empty">Нет подходящих целей</div>';
+  $("#upmore").style.display=l.length>upLim?"":"none";
+}
+function updWheel(){
+  const c=chanceOf(),C=2*Math.PI*90;
+  $("#arc").setAttribute("stroke-dasharray",`${C*c/100} ${C}`);
+  $("#pc").textContent=c.toFixed(c%1?2:0)+"%";
+  $("#sumv").textContent=f(sumSel());$("#tgv").textContent=f(tgt?sk(tgt).p:0);
+  $("#go").disabled=!(!busy&&sumSel()>0&&tgt&&sk(tgt).p>sumSel()&&c>=1);
+}
+$("#upinv").onclick=e=>{if(busy)return;const c=e.target.closest(".card");if(!c)return;const id=+c.dataset.uid;sel.has(id)?sel.delete(id):sel.add(id);c.classList.toggle("sel");$("#res").textContent="";renderTargets();updWheel()};
+$("#uptg").onclick=e=>{if(busy)return;const c=e.target.closest(".card");if(!c)return;const id=c.dataset.id;tgt=tgt==id?null:id;$("#res").textContent="";renderTargets();updWheel()};
+$("#mbar").onclick=e=>{const b=e.target.closest("button");if(!b)return;mult=+b.dataset.m;upLim=48;renderTargets()};
+$("#uq").oninput=e=>{upQ=e.target.value;upLim=48;renderTargets()};
+$("#upmore").onclick=()=>{upLim+=48;renderTargets()};
+$("#go").onclick=()=>{
+  if($("#go").disabled)return;
+  busy=true;updWheel();$("#res").textContent="";
+  const c=chanceOf(),roll=Math.random()*100,win=roll<c,t=tgt,used=[...sel];
+  rot=rot-rot%360+360*6+roll*3.6;
+  $("#needle").style.transform=`rotate(${rot}deg)`;
+  setTimeout(()=>{
+    st.inv=st.inv.filter(x=>!used.includes(x.id));
+    if(win){st.inv.push({id:st.nid++,s:t});const s=sk(t);$("#res").innerHTML=`<span class="win">ПОБЕДА! ${esc(s.w)} | ${esc(s.n)}</span>`;tgt=null}
+    else $("#res").innerHTML=`<span class="lose">Не повезло. Скины сгорели.</span>`;
+    sel.clear();busy=false;save();render();
+  },4400);
+};
+
+function render(){
+  $("#bal").textContent=(Math.round(st.bal*100)/100).toLocaleString("ru-RU");
+  if(!S.length)return;
+  if($("#shop").classList.contains("on"))renderShop();
+  if($("#inv").classList.contains("on"))renderInv();
+  if($("#up").classList.contains("on"))renderUp();
+}
+load();
+</script>
+</body>
+</html>
